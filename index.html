@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prep404 Lab AI Fleet — Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .pulse-green { box-shadow: 0 0 12px rgba(34, 197, 94, 0.4); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="glass sticky top-0 z-50 px-6 py-4 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse pulse-green"></div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+                    <span>Prep404</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-semibold uppercase tracking-wider">Lab Swarm v2.1</span>
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4 text-sm text-slate-400">
+                <div class="hidden sm:flex items-center space-x-2">
+                    <span class="text-slate-500">Gateway:</span>
+                    <span id="gateway-status" class="mono text-emerald-400 font-medium">labpc.benchly.live</span>
+                </div>
+                <button onclick="refreshData()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+        <!-- Stats Overview Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass p-5 rounded-2xl">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Pooled VRAM</div>
+                <div class="mt-2 flex items-baseline space-x-2">
+                    <span id="stat-vram" class="text-3xl font-extrabold text-white mono">--</span>
+                    <span class="text-sm font-semibold text-indigo-400">/ 320 GB GDDR6</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400">RTX A4000 GPU Cluster</div>
+            </div>
+
+            <div class="glass p-5 rounded-2xl">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Workstations Online</div>
+                <div class="mt-2 flex items-baseline space-x-2">
+                    <span id="stat-online" class="text-3xl font-extrabold text-emerald-400 mono">--</span>
+                    <span class="text-sm font-semibold text-slate-500">/ 20 Nodes</span>
+                </div>
+                <div id="stat-offline-sub" class="mt-2 text-xs text-slate-400">-- sleeping</div>
+            </div>
+
+            <div class="glass p-5 rounded-2xl">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Highest Active Tier</div>
+                <div class="mt-2 flex items-baseline space-x-2">
+                    <span id="stat-tier" class="text-2xl font-extrabold text-amber-400 mono">Checking...</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400">Automatic Waterfall Router</div>
+            </div>
+
+            <div class="glass p-5 rounded-2xl">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Master Host</div>
+                <div class="mt-2 flex items-baseline space-x-2">
+                    <span id="stat-master-ip" class="text-lg font-bold text-white mono">127.0.0.1</span>
+                </div>
+                <div class="mt-2 text-xs text-emerald-400 font-medium">Cloudflare Tunnel Active</div>
+            </div>
+        </div>
+
+        <!-- Quick Action Deck -->
+        <div class="glass p-5 rounded-2xl">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-white">Cluster Quick Actions</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">One-click fleet power orchestration and remote maintenance</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="wakeTarget('titan')" class="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center space-x-1.5">
+                        <span>⚡</span><span>Wake Titan (72B)</span>
+                    </button>
+                    <button onclick="wakeTarget('duo')" class="px-3.5 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition flex items-center space-x-1.5">
+                        <span>⚡</span><span>Wake Duo (32B)</span>
+                    </button>
+                    <button onclick="wakeTarget('all')" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition flex items-center space-x-1.5">
+                        <span>⚡</span><span>Wake All 20 PCs</span>
+                    </button>
+                    <button onclick="triggerSleep()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center space-x-1.5">
+                        <span>🌙</span><span>Sleep Fleet</span>
+                    </button>
+                    <button onclick="triggerWipe()" class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition flex items-center space-x-1.5">
+                        <span>🛡️</span><span>Privacy Wipe</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 20-Workstation Power Grid -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Workstation Power Grid</h2>
+                    <p class="text-xs text-slate-400">Live heartbeat status of all 20 lab workstations</p>
+                </div>
+                <div class="flex items-center space-x-4 text-xs">
+                    <span class="flex items-center space-x-1.5"><span class="h-2 w-2 rounded-full bg-emerald-500"></span><span class="text-slate-300">Online</span></span>
+                    <span class="flex items-center space-x-1.5"><span class="h-2 w-2 rounded-full bg-rose-500"></span><span class="text-slate-300">Sleeping / Offline</span></span>
+                </div>
+            </div>
+
+            <div id="nodes-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                <!-- Node Cards Dynamically Injected Here -->
+            </div>
+        </div>
+
+        <!-- Interactive AI Playground & Model Puller -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Playground -->
+            <div class="lg:col-span-2 glass p-6 rounded-2xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-white">Live Swarm Playground</h2>
+                        <p class="text-xs text-slate-400">Send prompts directly to any specialist or auto-waterfall tier</p>
+                    </div>
+                    <select id="chat-model-select" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500">
+                        <option value="auto">Auto Waterfall (Highest Tier)</option>
+                        <option value="max">Titan 72B Pod (Max Reasoning)</option>
+                        <option value="expert-duo-32b">Duo 32B Pod (Fast Heavy)</option>
+                        <option value="expert-flutter">Flutter Architect (14B)</option>
+                        <option value="expert-backend">Backend Engineer (14B)</option>
+                        <option value="expert-security">Security Auditor (14B)</option>
+                        <option value="expert-ui">UI / UX Vision (Qwen-VL 7B)</option>
+                        <option value="expert-qa">QA & Test Suite (14B)</option>
+                    </select>
+                </div>
+
+                <textarea id="chat-prompt" rows="3" placeholder="Enter prompt or code task..." class="w-full bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans"></textarea>
+
+                <div class="flex items-center justify-between">
+                    <span id="chat-meta" class="text-xs text-slate-500 mono">Ready</span>
+                    <button id="chat-submit-btn" onclick="sendPrompt()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2">
+                        <span>Generate Response</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+
+                <div id="chat-response-box" class="hidden mt-4 p-4 rounded-xl bg-slate-900/90 border border-slate-800 mono text-xs text-slate-200 overflow-x-auto whitespace-pre-wrap max-h-96"></div>
+            </div>
+
+            <!-- Remote Model Puller -->
+            <div class="glass p-6 rounded-2xl space-y-4">
+                <div>
+                    <h2 class="text-base font-bold text-white">Deploy New Model</h2>
+                    <p class="text-xs text-slate-400">Install models across the fleet on demand</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Target Workstations</label>
+                        <select id="pull-target-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2">
+                            <option value="all">All 20 Workstations</option>
+                            <option value="solo">All Solo Specialists</option>
+                            <option value="duo">Duo-Pods (32B)</option>
+                            <option value="titan">Titan-Pods (72B)</option>
+                            <option value="expert-security">Security Nodes</option>
+                            <option value="expert-flutter">Flutter Nodes</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Model Name (from Ollama)</label>
+                        <input id="pull-model-input" type="text" placeholder="e.g. deepseek-r1:14b, phi4:14b" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl p-2.5 mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <button onclick="deployModel()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                        Dispatch Background Pull
+                    </button>
+
+                    <div class="pt-3 border-t border-slate-800">
+                        <div class="text-xs text-slate-400 mb-2 font-semibold">Recommended 16GB Models:</div>
+                        <div class="flex flex-wrap gap-1.5 text-[11px] mono">
+                            <span class="px-2 py-0.5 rounded bg-slate-900 text-indigo-400 border border-slate-800 cursor-pointer" onclick="setModel('deepseek-r1:14b')">deepseek-r1:14b</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-900 text-indigo-400 border border-slate-800 cursor-pointer" onclick="setModel('qwen2.5-coder:32b')">qwen-coder:32b</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-900 text-indigo-400 border border-slate-800 cursor-pointer" onclick="setModel('phi4:14b')">phi4:14b</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Use saved backend URL, proxy, or default to labpc.benchly.live
+        let clusterHost = localStorage.getItem('cluster_endpoint') || 'https://labpc.benchly.live';
+        const API_BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && window.location.port === '8888'
+            ? '/api/proxy'
+            : clusterHost.replace(/\/+$/, '');
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/cluster/status`);
+                const data = await res.json();
+                renderDashboard(data);
+            } catch (err) {
+                console.error("Failed to load status:", err);
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('stat-vram').innerText = data.active_vram_gb || '0';
+            document.getElementById('stat-online').innerText = data.total_online || '0';
+            document.getElementById('stat-offline-sub').innerText = (data.total_offline || 0) + ' sleeping';
+            document.getElementById('stat-master-ip').innerText = data.master_ip || '127.0.0.1';
+
+            // Check tier
+            const online = data.online_nodes || [];
+            let tier = "Solo (14B)";
+            if (online.some(n => n.tier === 'titan' || (n.model && n.model.includes('72b')))) {
+                tier = "Titan (72B Pod)";
+            } else if (online.some(n => n.tier === 'duo' || (n.model && n.model.includes('32b')))) {
+                tier = "Duo (32B Pod)";
+            }
+            document.getElementById('stat-tier').innerText = tier;
+
+            // Render Grid
+            const container = document.getElementById('nodes-grid');
+            container.innerHTML = '';
+
+            const allNodes = [...(data.online_nodes || []), ...(data.offline_nodes || [])];
+            allNodes.sort((a, b) => a.key.localeCompare(b.key));
+
+            allNodes.forEach(node => {
+                const isOnline = node.status === 'online';
+                const card = document.createElement('div');
+                card.className = `glass p-3.5 rounded-xl border ${isOnline ? 'border-emerald-500/20 bg-slate-900/60' : 'border-slate-800/80 bg-slate-950/40 opacity-70'} transition hover:border-slate-700`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="mono font-bold text-xs ${isOnline ? 'text-white' : 'text-slate-400'}">${node.key.toUpperCase()}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${isOnline ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                            ${isOnline ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                    </div>
+                    <div class="mt-2 text-xs font-semibold text-slate-200 truncate">${node.role || 'Unassigned'}</div>
+                    <div class="text-[11px] text-slate-400 mono mt-0.5 truncate">${node.ip || '--'}</div>
+                    <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400 font-medium">${node.tier ? node.tier.toUpperCase() : '16GB'}</span>
+                        ${!isOnline ? `<button onclick="wakeTarget('${node.key}')" class="text-amber-400 hover:text-amber-300 font-semibold">⚡ Wake</button>` : `<span class="text-emerald-400 font-mono text-[10px]">16GB GDDR6</span>`}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function wakeTarget(target) {
+            alert(`Sending Wake-on-LAN to: ${target.toUpperCase()}...`);
+            await fetch(`${API_BASE}/cluster/wake`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target: target})
+            });
+            setTimeout(fetchStatus, 3000);
+        }
+
+        async function triggerSleep() {
+            if (confirm("Put all lab workstations into sleep mode?")) {
+                await fetch(`${API_BASE}/cluster/power`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: 'sleep', target: 'all'})
+                });
+                setTimeout(fetchStatus, 3000);
+            }
+        }
+
+        async function triggerWipe() {
+            if (confirm("Flush all VRAM cache and wipe all server logs for 100% privacy?")) {
+                await fetch(`${API_BASE}/cluster/wipe`, {method: 'POST'});
+                alert("Zero-trace privacy wipe complete!");
+            }
+        }
+
+        async function sendPrompt() {
+            const prompt = document.getElementById('chat-prompt').value.trim();
+            const model = document.getElementById('chat-model-select').value;
+            const btn = document.getElementById('chat-submit-btn');
+            const box = document.getElementById('chat-response-box');
+            const meta = document.getElementById('chat-meta');
+
+            if (!prompt) return;
+
+            btn.disabled = true;
+            btn.innerText = "Generating...";
+            meta.innerText = "Dispatching across cluster...";
+            box.classList.remove('hidden');
+            box.innerText = "Waiting for model generation...";
+
+            const start = Date.now();
+            try {
+                const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{role: 'user', content: prompt}],
+                        temperature: 0.6
+                    })
+                });
+                const data = await res.json();
+                const elapsed = ((Date.now() - start) / 1000).toFixed(2);
+
+                if (data.choices && data.choices[0]) {
+                    box.innerText = data.choices[0].message.content;
+                    meta.innerText = `Completed in ${elapsed}s on ${res.headers.get('X-Executed-On-Node') || 'cluster'}`;
+                } else {
+                    box.innerText = JSON.stringify(data, null, 2);
+                }
+            } catch (err) {
+                box.innerText = "Error: " + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Generate Response";
+            }
+        }
+
+        async function deployModel() {
+            const model = document.getElementById('pull-model-input').value.trim();
+            const target = document.getElementById('pull-target-select').value;
+            if (!model) return;
+
+            alert(`Instructing target [${target}] to pull model [${model}] in background...`);
+            await fetch(`${API_BASE}/cluster/pull`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target: target, model: model})
+            });
+            document.getElementById('pull-model-input').value = '';
+        }
+
+        function setModel(name) {
+            document.getElementById('pull-model-input').value = name;
+        }
+
+        function refreshData() {
+            fetchStatus();
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(fetchStatus, 5000);
+        fetchStatus();
+    </script>
+</body>
+</html>
