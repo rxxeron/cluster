@@ -22,7 +22,7 @@
                 <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse pulse-green"></div>
                 <h1 class="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
                     <span>Prep404</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-semibold uppercase tracking-wider">Dynamic GPU Swarm</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-semibold uppercase tracking-wider">Swarm Engine v3.0.0</span>
                 </h1>
             </div>
             <div class="flex items-center space-x-4 text-sm text-slate-400">
@@ -262,15 +262,22 @@
                 const card = document.createElement('div');
                 card.className = `glass p-3.5 rounded-xl border ${isOnline ? 'border-emerald-500/20 bg-slate-900/60' : 'border-slate-800/80 bg-slate-950/40 opacity-70'} transition hover:border-slate-700`;
 
+                const isVm = !vramGb || gpuName.includes('Basic Display') || gpuName.includes('Generic');
+                const displayHardware = isVm ? 'Virtual Machine (CPU Node)' : gpuName;
+                const vramBadge = isVm ? 'System RAM (CPU)' : `${vramGb} GB VRAM`;
+
                 card.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span class="mono font-bold text-xs ${isOnline ? 'text-white' : 'text-slate-400'}">${nodeName.toUpperCase()}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="mono font-bold text-xs ${isOnline ? 'text-white' : 'text-slate-400'}">${nodeName.toUpperCase()}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v${node.version || '3.0.0'}</span>
+                        </div>
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${isOnline ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
                             ${isOnline ? 'ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
-                    <div class="mt-2 text-xs font-semibold text-slate-200 truncate" title="${gpuName}">
-                        ${gpuName}
+                    <div class="mt-2 text-xs font-semibold text-slate-200 truncate" title="${displayHardware}">
+                        ${displayHardware}
                     </div>
                     <div class="text-[11px] text-slate-400 mono mt-0.5 truncate">${node.ip || '--'}</div>
                     
@@ -279,9 +286,9 @@
                     </div>
 
                     <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                        <span class="text-slate-300 font-semibold">${vramGb ? vramGb + ' GB VRAM' : '--'}</span>
+                        <span class="${isVm ? 'text-amber-400/90' : 'text-slate-300'} font-semibold">${vramBadge}</span>
                         ${isOnline 
-                            ? `<span class="text-emerald-400 font-mono text-[10px]">${[temp, util].filter(Boolean).join(' • ') || 'Ready'}</span>` 
+                            ? `<span class="text-emerald-400 font-mono text-[10px]">${[temp, util].filter(Boolean).join(' • ') || 'Active'}</span>` 
                             : `<button onclick="wakeTarget('${nodeName}')" class="text-amber-400 hover:text-amber-300 font-semibold">⚡ Wake</button>`}
                     </div>
                 `;
